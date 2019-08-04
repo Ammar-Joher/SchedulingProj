@@ -12,7 +12,7 @@ connection = False
 cursor = None
 
 
-def sendEmail(user_email, user_birthday):
+def sendEmail(user_email, toUser_birthday):
     fromaddr = 'savethewarrior@gmail.com'
     toUser_email = user_email
     msg = "\r\n".join([
@@ -20,7 +20,7 @@ def sendEmail(user_email, user_birthday):
         "To:" + toUser_email + "@gmail.com",
         "Subject: It's your birthday!",
         "",
-        "Happy birthday " + user_birthday + "\n\nBest Regards\nAdmin Team"
+        "Happy birthday " + toUser_birthday + "\n\nBest Regards\nAdmin Team"
     ])
     username = 'savethewarrior@gmail.com'
     password = 'smtplib4488'
