@@ -1,5 +1,5 @@
+import ast
 import sched
-from datetime import datetime
 import psycopg2
 import schedule
 import time
@@ -8,16 +8,21 @@ import sendgrid
 import os
 from sendgrid.helpers.mail import *
 from sendgrid import SendGridAPIClient
-
 import json
-
+from datetime import datetime, timedelta
+from pytz import timezone
+import pytz
 date_format = "%Y-%m-%d"
 
 connection = False
 cursor = None
 
-sg = sendgrid.SendGridAPIClient('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')
+sg = sendgrid.SendGridAPIClient('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')
 
+with open("C:\\Users\Debobroto.Talukder\PycharmProjects\SchedulingProj\countryCodes.txt", "r") as data:
+    dictionary = ast.literal_eval(data.read())
+
+user_cName = ''
 
 def sendEmailGrid(toUser_birthdayGrid, user_emailGrid):
     message = Mail(
@@ -27,10 +32,11 @@ def sendEmailGrid(toUser_birthdayGrid, user_emailGrid):
         html_content="<strong>Happy birthday " + toUser_birthdayGrid + "</strong>" + "<br> <br>Best Regards<br>Admin Team")
 
     try:
-        msg = sg.send(message)
+        #message.smtpapi.set_send_at(timestamp)
+        response = sg.send(message)
 
     except Exception as e:
-        print(e)
+        print(response.e)
 
     print("Email to birthday user sent!\n")
 
@@ -57,9 +63,18 @@ def sendEmail(toUser_birthday, user_email):
     print("Email sent to user!!\n")
 
 
-def job(user_birthday, user_email): #Function called when date of birth is today
+def job(user_birthday, user_email, user_country): #Function called when date of birth is today
     print("It's", user_birthday,"\b's Birthday!")
-    sendEmailGrid(user_birthday, user_email)
+    for country_name in dictionary:
+        # print(country_name['name'])
+        if country_name['name'] == user_country:
+            print("Time zone of user country:", str(country_name.get("timezones")).replace("['", "").replace("']", ""))
+            ist = pytz.timezone(str(country_name.get("timezones")).replace("['", "").replace("']", ""))
+            print('Hour in ' + user_country + ": ", datetime.now(tz=ist).hour, " (24 hour format)")
+            if datetime.now(tz=ist).hour == 00:
+                sendEmailGrid(user_birthday, user_email)
+            else:
+                print("Email will only send at 00 hour")
 
 try:
     #Connection to database
@@ -78,15 +93,17 @@ try:
     for row in user_records:
         print("DOB = ", row[0], )
         print("username = ", row[1], )
-        print("email = ", row[2], "\n")
+        print("email = ", row[2], )
+        print("country = ", str(row[3]), "\n")
         print("Birthday(month-date)", datetime.strptime(str(row[0]), date_format).date().month, "-", datetime.strptime(str(row[0]), date_format).date().day)
         print("Today(month-date)",datetime.now().date().month, "-", datetime.now().date().day,"\n")
         if (datetime.strptime(str(row[0]), date_format).date().month, "-", datetime.strptime(str(row[0]), date_format).date().day) == (datetime.now().date().month, "-", datetime.now().date().day):
             birthday_username = str(row[1])
             email_user = str(row[2])
-            job(birthday_username, email_user)
+            country_user = str(row[3])
+            job(birthday_username, email_user, country_user)
         else:
-            print("Not the same date\n")
+            print("Today is not his birthday\n")
 
     record = cursor.fetchone()
 except (Exception, psycopg2.Error) as error :
